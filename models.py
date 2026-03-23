@@ -40,9 +40,11 @@ class Post(Base):
         nullable=False,
         index=True,
     )
+    # index= True: indexing for foreign key for optimisation select
     date_posted: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
     )
-
+    # timezone=True: timezone awared storage
     author: Mapped[User] = relationship(back_populates="posts")
+#     many to one relationship
