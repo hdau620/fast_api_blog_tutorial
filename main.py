@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from schemas import PostCreate, PostResponse, UserResponse, UserCreate, PostUpdate
+from schemas import PostCreate, PostResponse, UserResponse, UserCreate, PostUpdate, UserUpdate
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -113,6 +113,66 @@ def get_user(user_id :int, db: Annotated[Session, Depends(get_db)]):
         status_code=status.HTTP_404_NOT_FOUND,
         detail = "User not found"
     )
+
+#Update user profile
+@app.patch('/api/users/{user_id}', response_model=UserResponse)
+def update_user(user_id: int, db: Annotated[Session, Depends(get_db)], user_data: UserUpdate ):
+    result = db.execute(
+        select(models.User).where(models.User.id == user_id)
+    )
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    if user_data.email is not None and user_data.email != user.email:
+        result = db.execute(
+            select(models.User).where(models.User.email == user_data.email)
+        )
+        existing_email = result.scalars().first()
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is already used!"
+            )
+
+
+    if user_data.username is not None and user_data.username != user.username:
+        result = db.execute(
+            select(models.User).where(models.User.username == user_data.username)
+        )
+        existing_username = result.scalars().first()
+        if existing_username:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username is already used!"
+            )
+
+    update_user = user_data.model_dump(exclude_unset=True)
+    for (field,value) in update_user.items():
+        setattr(user,field,value)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+# Delete user
+@app.delete('/api/users/{user_id}', status_code= status.HTTP_204_NO_CONTENT)
+def delete_user(user_id : int, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(
+        select(models.User).where(models.User.id == user_id)
+    )
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    db.delete(user)
+    db.commit()
+
 
 ## get_user_posts
 @app.get("/api/users/{user_id}/posts", response_model=list[PostResponse])

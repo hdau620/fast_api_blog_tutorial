@@ -6,6 +6,13 @@ class UserBase(BaseModel):
     username: str = Field(min_length=1, max_length=100)
     email: EmailStr  = Field(max_length=200)
 
+class UserUpdate(BaseModel):
+    pass
+    username: str | None= Field(default=None, min_length=1, max_length=100)
+    email: EmailStr | None  = Field(default=None, max_length=200)
+    image_file: str | None = Field(default=None, max_length=300)
+
+
 # What we expected form uer
 class UserCreate(UserBase):
     pass
