@@ -12,28 +12,33 @@ class UserUpdate(BaseModel):
     email: EmailStr | None  = Field(default=None, max_length=200)
     image_file: str | None = Field(default=None, max_length=300)
 
+class Token(BaseModel):
+    access_token : str
+    token_type: str
 
 # What we expected form uer
 class UserCreate(UserBase):
-    pass
+    password: str = Field(min_length=8)
 
 # what we respond back to user
-class UserResponse(UserBase):
-    pass
+class UserPublic(BaseModel):
     # This allows pydantic to read from sqlalchemy model
     model_config = ConfigDict(from_attributes=True)
 
     id:int
+    username: str
     image_file: str|None
     image_path: str
+
+class UserPrivate(UserPublic):
+    email: EmailStr
 
 class PostBase(BaseModel):
     title: str = Field(min_length=1, max_length=100)
     content: str = Field(min_length=1, max_length=100)
 
 class PostCreate(PostBase):
-    user_id: int
-
+    pass
 class PostUpdate(BaseModel):
     title: str| None = Field(default=None, min_length = 1, max_length=100)
     content: str| None = Field(default=None, min_length=1, max_length=100)
@@ -44,4 +49,4 @@ class PostResponse(PostBase):
     user_id: int
     date_posted: datetime
     # Why is it working? sending nested json back to user
-    author: UserResponse
+    author: UserPublic
